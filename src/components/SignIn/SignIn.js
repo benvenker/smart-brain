@@ -18,6 +18,7 @@ class SignIn extends React.Component {
 
   onSubmitSignIn = (event) => {
     event.preventDefault()
+    console.log('clicked');
     fetch('http://localhost:3000/signin', {
       method: 'post',
       headers: { 'Content-Type': 'application/json' },
@@ -28,8 +29,8 @@ class SignIn extends React.Component {
     })
       .then(response => response.json())
       .then(user => {
-        console.log(user);
-        if (user.id === 'success') {
+        if (user.id) {
+          console.log('success');
           this.props.loadUser(user);
           this.props.onRouteChange('home');
         }

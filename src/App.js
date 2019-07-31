@@ -8,11 +8,6 @@ import SignIn from './components/SignIn/SignIn';
 import Register from './components/Register/Register';
 import ImageLinkForm from './components/ImageLinkForm/ImageLinkForm';
 import Rank from './components/Rank/Rank';
-import Clarifai from 'clarifai';
-
-const app = new Clarifai.App({
-  apiKey: 'e5df9c7b074445b0a189d8da8f8719d2'
-});
 
 const particlesOptions = {
   particles: {
@@ -28,24 +23,26 @@ const particlesOptions = {
   }
 }
 
+const initialState = {
+  input: '',
+  imageUrl: '',
+  box: {},
+  route: 'signin',
+  isSignedIn: false,
+  user: {
+    email: '',
+    id: '',
+    name: '',
+    password: '',
+    entries: 0,
+    joined: ''
+  }
+}
+
 class App extends Component {
   constructor() {
     super();
-    this.state = {
-      input: '',
-      imageUrl: '',
-      box: {},
-      route: 'signin',
-      isSignedIn: false,
-      user: {
-        email: '',
-        id: '',
-        name: '',
-        password: '',
-        entries: 0,
-        joined: ''
-      }
-    }
+    this.state = initialState;
   }
 
   loadUser = (data) => {
@@ -60,11 +57,11 @@ class App extends Component {
     });
   }
 
-  componentDidMount() {
-    fetch('http://localhost:3000')
-      .then(response => response.json())
-      .then(console.log);
-  }
+  // componentDidMount() {
+  //   fetch('http://localhost:3000')
+  //     .then(response => response.json())
+  //     .then(console.log);
+  // }
 
   calculateFaceLocation = (data) => {
     const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box
@@ -89,14 +86,16 @@ class App extends Component {
   };
 
   onButtonSubmit = (event) => {
-    event.preventDefault();
+    event.preventDefault(event);
     this.setState({ imageUrl: this.state.input });
-    app.models
-      .predict(
-        Clarifai.FACE_DETECT_MODEL,
-        // URL
-        this.state.input
-      )
+    fetch('http://localhost:3000/imageurl', {
+      method: 'post',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        input: this.state.input,
+      })
+    })
+      .then(response => response.json())
       .then(response => {
         if (response) {
           fetch('http://localhost:3000/image', {
@@ -105,7 +104,11 @@ class App extends Component {
             body: JSON.stringify({
               id: this.state.user.id,
             })
-          });
+          })
+            .then(response => response.json())
+            .then(count => {
+              this.setState(Object.assign(this.state.user, { entries: count }))
+            })
         }
         this.displayFaceBox(this.calculateFaceLocation(response));
       })
@@ -115,7 +118,7 @@ class App extends Component {
 
   onRouteChange = (route) => {
     if (route === 'signout') {
-      this.setState({ isSignedIn: false });
+      this.setState(initialState);
     } else if (route === 'home') {
       this.setState({ isSignedIn: true });
     }
